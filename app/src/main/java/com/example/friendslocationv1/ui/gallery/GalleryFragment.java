@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,7 +29,10 @@ import com.example.friendslocationv1.R;
 import com.example.friendslocationv1.databinding.FragmentGalleryBinding;
 import com.example.friendslocationv1.ui.home.HomeFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -44,7 +48,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Objects;
 
-public class GalleryFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
+public class GalleryFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapClickListener, LocationListener {
 
     private FragmentGalleryBinding binding;
     int FinePermissionCode = 1;
@@ -52,10 +56,14 @@ public class GalleryFragment extends Fragment implements OnMapReadyCallback, Goo
     FusedLocationProviderClient client;
     GoogleMap googleMap;
     Marker previousMarker;
+    Marker previousMarkerCurrent;
+    private static final long UPDATE_INTERVAL = 5; // 5 seconds
+    private static final float MIN_DISTANCE = 10; // 10 meters
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         client = LocationServices.getFusedLocationProviderClient(this.requireContext());
         binding = FragmentGalleryBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -128,20 +136,37 @@ public class GalleryFragment extends Fragment implements OnMapReadyCallback, Goo
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        stopLocationUpdates();
         binding = null;
+    }
+
+    private void stopLocationUpdates() {
+        client.removeLocationUpdates(this);
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
-        googleMap.addMarker(new MarkerOptions()
+        previousMarkerCurrent = googleMap.addMarker(new MarkerOptions()
                 .position(new LatLng(currentlocation.getLatitude(), currentlocation.getLongitude()))
                 .title("My Location"));
         binding.ptLongitudeGallery.setText(String.valueOf(currentlocation.getLongitude()));
         binding.ptLatitudeGallery.setText(String.valueOf(currentlocation.getLatitude()));
         this.googleMap.setOnMapClickListener(this);
+
+        startLocationUpdates();
     }
 
+    private void startLocationUpdates() {
+        LocationRequest locationRequest = new LocationRequest.Builder(UPDATE_INTERVAL)
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .setMinUpdateDistanceMeters(MIN_DISTANCE)
+                .build();
+
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            client.requestLocationUpdates(locationRequest, this, Looper.getMainLooper());
+        }
+    }
 
 
     @Override
@@ -167,6 +192,30 @@ public class GalleryFragment extends Fragment implements OnMapReadyCallback, Goo
         previousMarker = googleMap.addMarker(markerOptions);
         binding.ptLongitudeGallery.setText(String.valueOf(latLng.longitude));
         binding.ptLatitudeGallery.setText(String.valueOf(latLng.latitude));
+    }
+
+    @Override
+    public void onLocationChanged(@NonNull Location location) {
+        // Update current location
+        currentlocation = location;
+
+        // Update marker or do other necessary tasks
+        updateMarker();
+    }
+
+    private void updateMarker() {
+        // Update marker with the new location
+        if (googleMap != null && currentlocation != null) {
+            LatLng latLng = new LatLng(currentlocation.getLatitude(), currentlocation.getLongitude());
+            if (previousMarkerCurrent != null) {
+                previousMarkerCurrent.remove();
+            }
+            previousMarkerCurrent = googleMap.addMarker(new MarkerOptions().position(latLng).title("My Location"));
+
+            // Update latitude and longitude fields
+//            binding.ptLongitudeGallery.setText(String.valueOf(currentlocation.getLongitude()));
+//            binding.ptLatitudeGallery.setText(String.valueOf(currentlocation.getLatitude()));
+        }
     }
 
     class Download extends AsyncTask {

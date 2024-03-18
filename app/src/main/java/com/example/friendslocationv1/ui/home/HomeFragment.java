@@ -13,10 +13,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.friendslocationv1.Config;
 import com.example.friendslocationv1.JSONParser;
 import com.example.friendslocationv1.Position;
+import com.example.friendslocationv1.PositionAdapter;
+import com.example.friendslocationv1.R;
 import com.example.friendslocationv1.databinding.FragmentHomeBinding;
 
 import org.json.JSONArray;
@@ -29,6 +33,8 @@ public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
     ArrayList<Position> data = new ArrayList<Position>();
+    private RecyclerView recyclerView;
+    private PositionAdapter positionAdapter;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -46,6 +52,11 @@ public class HomeFragment extends Fragment {
 
                 Download download = new Download(HomeFragment.this.getActivity());
                 download.execute();
+
+//                recyclerView = root.findViewById(R.id.recyclerView);
+//                recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+//                positionAdapter = new PositionAdapter(data);
+//                recyclerView.setAdapter(positionAdapter);
 
 
             }
@@ -134,8 +145,12 @@ public class HomeFragment extends Fragment {
         @Override
         protected void onPostExecute(Object o) {//ui thread (main thread)
             //hide dialogue box show result
-            ArrayAdapter<Position> positionAdapter = new ArrayAdapter<Position>(con, android.R.layout.simple_list_item_1, data);
-            binding.lvHomePos.setAdapter(positionAdapter);
+//            ArrayAdapter<Position> positionAdapter = new ArrayAdapter<Position>(con, android.R.layout.simple_list_item_1, data);
+//            binding.lvHomePos.setAdapter(positionAdapter);
+            recyclerView = requireView().findViewById(R.id.recyclerView);
+            recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+            positionAdapter = new PositionAdapter(data);
+            recyclerView.setAdapter(positionAdapter);
             alert.dismiss();
         }
 
