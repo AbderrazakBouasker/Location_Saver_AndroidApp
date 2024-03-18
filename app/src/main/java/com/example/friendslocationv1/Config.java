@@ -10,5 +10,6 @@ public class Config {
     public static final String IP_LOCAL="192.168.1.7";
     public static final String URL_GET_ALL="http://"+IP_LOCAL+"/servicephp/get_all";
     public static final String URL_ADD_POSITION="http://"+IP_LOCAL+"/servicephp/add_position";
+    public static final String URL_DELETE_POSITION="http://"+IP_LOCAL+"/servicephp/delete_position";
 
 }

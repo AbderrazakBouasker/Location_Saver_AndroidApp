@@ -1,14 +1,23 @@
 package com.example.friendslocationv1;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.os.AsyncTask;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.friendslocationv1.ui.gallery.GalleryFragment;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
 import java.util.List;
 
 public class PositionAdapter extends RecyclerView.Adapter<PositionAdapter.PositionViewHolder> {
@@ -42,7 +51,7 @@ public class PositionAdapter extends RecyclerView.Adapter<PositionAdapter.Positi
         return positionList.size();
     }
 
-    static class PositionViewHolder extends RecyclerView.ViewHolder {
+    class PositionViewHolder extends RecyclerView.ViewHolder {
         TextView tvPseudo, tvLatitude, tvLongitude;
         Button btnDelete;
 
@@ -56,9 +65,72 @@ public class PositionAdapter extends RecyclerView.Adapter<PositionAdapter.Positi
             btnDelete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    Download download = new Download(itemView.getContext());
+                    download.execute();
                 }
             });
         }
+
+        class Download extends AsyncTask {
+
+            Context con;
+            AlertDialog alert;
+            String message;
+
+            public Download(Context con) {
+                this.con=con;
+            }
+
+
+            @Override
+            protected void onPreExecute() {//ui thread (main thread)
+
+
+            }
+
+            @Override
+            protected Object doInBackground(Object[] objects) {//second thread
+                //internet connection => execute service
+                JSONParser parser = new JSONParser();
+                int position = getAdapterPosition();
+                Position p = new Position();
+                p = positionList.get(position);
+                HashMap<String,String> params = new HashMap<String,String>();
+                params.put("idposition", String.valueOf(p.idposition));
+                JSONObject response = parser.makeHttpRequest(Config.URL_DELETE_POSITION,"POST",params);
+
+
+
+                try{
+                    int success = response.getInt("success");
+                    message = response.getString("message");
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {//ui thread (main thread)
+                //hide dialogue box show result
+//            ArrayAdapter<Position> positionAdapter = new ArrayAdapter<Position>(con, android.R.layout.simple_list_item_1, data);
+//            binding.lvHomePos.setAdapter(positionAdapter);
+//            alert.dismiss();
+                int position = getAdapterPosition();
+                positionList.remove(position);
+                notifyDataSetChanged();
+                Toast.makeText(con, message, Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
     }
 }
